@@ -1,0 +1,37 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def polynomial_curve_fitting(x,y,poly_degree):
+    coeff=np.polyfit(x,y,poly_degree)
+    poly=np.poly1d(coeff)
+    return poly
+def make_plots(x,y,poly):
+    plt.scatter(x,y)
+    plt.show()
+    plt.scatter(x,y)
+    x_line=np.linspace(min(x),max(x),100)
+    plt.plot(x_line,poly(x_line),color='r')
+    plt.grid()
+    plt.show()
+def make_prediction(x_new,poly):
+    predicted_val=poly(x_new)
+    return predicted_val
+
+
+df=sns.load_dataset('iris')
+
+
+df.head()
+
+
+x=df['sepal_length']
+y=df['sepal_width']
+poly=polynomial_curve_fitting(x,y,5)
+make_plots(x,y,poly)
+
+
+x_new=5
+print(f'Prediction of Sepal Width for sepal length 5 cm is: {make_prediction(x_new,poly)}')

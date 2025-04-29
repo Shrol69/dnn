@@ -1,0 +1,99 @@
+# Implement Hessian metrices 
+
+import sympy as sp
+
+def compute_hessian(f, variables):
+
+    # Compute gradient (first-order partial derivatives)
+    gradient = [sp.diff(f, var) for var in variables]
+
+    # Compute Hessian matrix (second-order partial derivatives)
+    hessian = sp.Matrix([[sp.diff(gradient[i], var) for var in variables]
+                         for i in range(len(variables))])
+
+    return hessian
+
+if __name__ == "__main__":
+    # Define symbolic variables
+    x, y, z = sp.symbols('x y z')
+
+    # Define the scalar-valued multivariate function
+    f = 2*x**2 + 3*x*y + 10*y**2 + 8*y*z + 2*z**3
+
+    # List of variables
+    variables = [x, y, z]
+
+    # Compute the Hessian matrix
+    hessian = compute_hessian(f, variables)
+
+    # Display result
+    print("Hessian matrix:")
+    sp.pprint(hessian)
+
+
+
+
+
+
+
+
+
+
+
+# Optimize hessian metrices
+
+import numpy as np
+from scipy.linalg import eigh  # For eigenvalues
+
+# 1. Define the objective function
+def objective_function(x):
+    # Example: f(x, y, z) = 2x^2 + 3xy + 10y^2 + 8yz + 2z^3
+    return 2*x[0]**2 + 3*x[0]*x[1] + 10*x[1]**2 + 8*x[1]*x[2] + 2*x[2]**3
+
+# 2 & 3. Compute Hessian matrix using finite differences
+def compute_hessian_fd(f, x, h=1e-5):
+    n = len(x)
+    hessian = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            x1 = x.copy(); x1[i] += h; x1[j] += h
+            x2 = x.copy(); x2[i] += h; x2[j] -= h
+            x3 = x.copy(); x3[i] -= h; x3[j] += h
+            x4 = x.copy(); x4[i] -= h; x4[j] -= h
+            hessian[i, j] = (f(x1) - f(x2) - f(x3) + f(x4)) / (4*h**2)
+    return hessian
+
+# 4, 5, 6. Analyze Hessian
+def analyze_hessian(hessian):
+    rounded_hessian = np.round(hessian, 3)
+    print("\nHessian Matrix:")
+    print(rounded_hessian)
+
+    # Symmetry check
+    is_symmetric = np.allclose(hessian, hessian.T)
+    print("Is Symmetric:", is_symmetric)
+
+    # Eigenvalues and definiteness
+    eigenvalues = eigh(hessian, eigvals_only=True)
+    print("Eigenvalues:", np.round(eigenvalues, 5))
+
+    is_positive_definite = np.all(eigenvalues > 0)
+    print("Is Positive Definite:", is_positive_definite)
+
+    # ✅ Determinant
+    determinant = np.linalg.det(hessian)
+    print("Determinant of Hessian:", round(determinant, 5))
+
+    # Interpretation
+    if is_positive_definite:
+        print("→ The function has a local minimum at the point.")
+    elif np.all(eigenvalues < 0):
+        print("→ The function has a local maximum at the point.")
+    else:
+        print("→ The function has a saddle point at the point.")
+
+# Main function
+if __name__ == "__main__":
+    point = np.array([1.0, 1.0, 1.0])  # Evaluation point
+    hessian = compute_hessian_fd(objective_function, point)
+    analyze_hessian(hessian)
