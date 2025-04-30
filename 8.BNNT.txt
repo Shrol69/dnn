@@ -1,97 +1,84 @@
+# Import libraries
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense,Flatten
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.datasets import mnist
-
-
-(x_train,y_train),(x_test,y_test)=mnist.load_data()
-
-
-x_train=x_train/255.0
-x_test=x_test/255.0
-
-
-model=Sequential([
-    Flatten(input_shape=(28,28)),
-    Dense(128,activation='relu'),
-    Dense(10,activation='softmax')
-])
-
-
-model.compile(optimizer=Adam(learning_rate=0.001),loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-
-
-history=model.fit(x_train,y_train,epochs=10)
-
-
-plt.imshow(x_test[3])
-
-
-prediction=model.predict(np.expand_dims(x_test[3],axis=0))
-pred=np.argmax(prediction)
-print(pred)
-
-
-##Regression
-# Load libraries
-import pandas as pd
-import numpy as np
-import tensorflow as tf
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.datasets import load_wine, fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.optimizers import Adam
+from sklearn.preprocessing import StandardScaler
 
+# ------------------ Classification using Wine Dataset (1-2-2-1 architecture) ------------------
 
-df = sns.load_dataset('iris')
+# Load the Wine dataset
+wine = load_wine()
+X_class = wine.data[:, [0]]  # Use only the first feature to match input size 1
+y_class = wine.target
 
+# Standardize the features
+scaler = StandardScaler()
+X_class_scaled = scaler.fit_transform(X_class)
 
-# Encode categorical column
-df = pd.get_dummies(df, columns=['species'])
+# Split the dataset
+X_train_class, X_test_class, y_train_class, y_test_class = train_test_split(X_class_scaled, y_class, test_size=0.2, random_state=42)
 
-
-# Feature and Target
-x = df.drop(columns=['sepal_length'])
-y = df['sepal_length']
-
-
-# Split
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-
-
-# Build model
-model = Sequential([
-    Input(shape=(x_train.shape[1],)),  # Better style: separate Input layer
-    Dense(64, activation='relu'),
-    Dense(32, activation='relu'),
-    Dense(1)  # One output neuron for regression
+# Build the classification model
+model_class = Sequential([
+    Dense(2, activation='relu', input_shape=(1,)),  # Input layer with 1 feature -> 2 neurons
+    Dense(2, activation='relu'),                    # Hidden layer
+    Dense(3, activation='softmax')                  # Output layer for 3 classes
 ])
 
+# Compile the model
+model_class.compile(optimizer=Adam(learning_rate=0.01), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-# Compile
-model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error', metrics=['mae'])
+# Train the model
+print("\nTraining Classification Model:")
+model_class.fit(X_train_class, y_train_class, epochs=20, verbose=1)
 
+# Test the model
+prediction_class = model_class.predict(X_test_class[3:4])
+pred_class = np.argmax(prediction_class)
+print(f'Classification - Predicted class: {pred_class}, Actual class: {y_test_class[3]}')
 
-# Train
-history = model.fit(x_train, y_train, epochs=25, verbose=1)
+# ------------------ Regression using California Housing Dataset (1-2-2-1 architecture) ------------------
 
+# Load the California Housing dataset
+california = fetch_california_housing()
+X_reg = california.data[:, [0]]  # Use only the first feature to match input size 1
+y_reg = california.target
 
-# Predict
-predictions = model.predict(x_test)
+# Standardize the feature
+X_reg_scaled = scaler.fit_transform(X_reg)
 
+# Split the dataset
+X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(X_reg_scaled, y_reg, test_size=0.2, random_state=42)
 
-# Print predictions
-for pred, actual in zip(predictions.flatten(), y_test):
+# Build the regression model
+model_reg = Sequential([
+    Dense(2, activation='relu', input_shape=(1,)),  # Input layer with 1 feature -> 2 neurons
+    Dense(2, activation='relu'),                    # Hidden layer
+    Dense(1)                                        # Output layer for regression
+])
+
+# Compile the model
+model_reg.compile(optimizer=Adam(learning_rate=0.01), loss='mean_squared_error', metrics=['mae'])
+
+# Train the model
+print("\nTraining Regression Model:")
+model_reg.fit(X_train_reg, y_train_reg, epochs=20, verbose=1)
+
+# Predict and evaluate
+predictions_reg = model_reg.predict(X_test_reg)
+
+# Display a few predictions
+print("\nSample Regression Predictions:")
+for pred, actual in zip(predictions_reg[:5].flatten(), y_test_reg[:5]):
     print(f'Predicted: {pred:.2f}, Actual: {actual:.2f}')
 
-
-# R2 Score
-r2 = r2_score(y_test, predictions)
-print(f'R2 Score: {r2:.4f}')
+# Calculate R2 score
+r2 = r2_score(y_test_reg, predictions_reg)
+print(f'\nRegression - R2 Score: {r2:.4f}')

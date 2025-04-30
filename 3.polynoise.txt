@@ -34,10 +34,3 @@ y=df['tip']
 poly,y_noise=polynomial_curve_fitting(x,y,5,3)
 for actual,noise in zip(y,y_noise):
     print(f'Actual Value: {actual} and Value with noise: {noise}')
-
-
-make_plots(x,y_noise,poly)
-
-
-x_new=10
-print(make_prediction(x_new,poly))
