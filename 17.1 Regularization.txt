@@ -1,0 +1,195 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Dropout
+from tensorflow.keras.regularizers import l1, l2
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.datasets import mnist
+
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+
+
+x_train = x_train.reshape(-1, 28, 28, 1)  # Shape: (60000, 28, 28, 1)
+x_test = x_test.reshape(-1, 28, 28, 1) 
+
+
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+
+datagen = ImageDataGenerator(
+    rotation_range=20,
+    zoom_range=0.2,
+)
+
+
+model = Sequential([
+    Flatten(input_shape=(28, 28)),
+    Dense(128, activation='relu', kernel_regularizer=l2(0.01)),  # L2 Regularization
+    Dropout(0.5),  # Dropout Layer
+    Dense(10, activation='softmax')
+])
+
+
+early_stopping = EarlyStopping(monitor='val_loss', patience=3,restore_best_weights=True)
+
+
+model.compile(optimizer=Adam(learning_rate=0.001),
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+
+history = model.fit(datagen.flow(x_train, y_train),
+                    epochs=10,
+                    validation_data=(x_test, y_test),
+                    callbacks=[early_stopping])
+
+
+##Regression
+import numpy as np
+import pandas as pd
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt
+
+
+df=sns.load_dataset('iris')
+df.head()
+
+
+x=df.drop(columns=['sepal_length'])
+y=df['sepal_length']
+
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+
+
+le=LabelEncoder()
+x_train['species']=le.fit_transform(x_train['species'])
+x_test['species']=le.transform(x_test['species'])
+
+
+noise_factor = 0.1
+x_train_noisy = x_train + noise_factor * np.random.normal(size=x_train.shape)
+x_test_noisy = x_test + noise_factor * np.random.normal(size=x_test.shape)
+
+
+model=Sequential([
+    Dense(64,activation='relu',input_shape=(x_train.shape[1],)),
+    Dropout(0.5),
+    Dense(32,activation='relu'),
+    Dropout(0.5),
+    Dense(1)
+])
+early_stopping=EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)
+model.compile(optimizer=Adam(learning_rate=0.001),loss='mean_squared_error',metrics=['mae'])
+history=model.fit(x_train_noisy,y_train,epochs=25,validation_data=(x_test_noisy,y_test),callbacks=early_stopping)
+
+
+
+17 Regularization
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import make_classification
+import matplotlib.pyplot as plt
+
+# ---------- Synthetic Data ----------
+X, y = make_classification(n_samples=1000, n_features=20, n_informative=10, n_classes=2, random_state=42)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# ---------- Split ----------
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
+
+# ---------- Model Builder ----------
+def build_model(regularizer=None, use_dropout=False, input_shape=(20,)):
+    model = Sequential()
+    model.add(Dense(64, activation='relu', kernel_regularizer=regularizer, input_shape=input_shape))
+    if use_dropout:
+        model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# ---------- Helper for Plotting ----------
+def plot_history(history, title, early_stop_epoch=None):
+    epochs = range(1, len(history.history['loss']) + 1)
+    plt.figure(figsize=(12, 5))
+
+    # Accuracy plot
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, history.history['accuracy'], label='Train Acc')
+    plt.plot(epochs, history.history['val_accuracy'], label='Val Acc')
+    if early_stop_epoch:
+        plt.axvline(x=early_stop_epoch, color='r', linestyle='--', label=f'Stopped at {early_stop_epoch}')
+    plt.title(f'{title} - Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True)
+
+    # Loss plot
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, history.history['loss'], label='Train Loss')
+    plt.plot(epochs, history.history['val_loss'], label='Val Loss')
+    if early_stop_epoch:
+        plt.axvline(x=early_stop_epoch, color='r', linestyle='--', label=f'Stopped at {early_stop_epoch}')
+    plt.title(f'{title} - Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+# ==========================================================================
+# 1️⃣ L1 Regularization
+model_l1 = build_model(regularizer=tf.keras.regularizers.l1(0.01))
+history_l1 = model_l1.fit(X_train, y_train, epochs=10, validation_split=0.2, verbose=0)
+plot_history(history_l1, "L1 Regularization")
+
+# ==========================================================================
+# 2️⃣ L2 Regularization
+model_l2 = build_model(regularizer=tf.keras.regularizers.l2(0.01))
+history_l2 = model_l2.fit(X_train, y_train, epochs=10, validation_split=0.2, verbose=0)
+plot_history(history_l2, "L2 Regularization")
+
+# ==========================================================================
+# 3️⃣ Dropout
+model_dropout = build_model(regularizer=None, use_dropout=True)
+history_dropout = model_dropout.fit(X_train, y_train, epochs=10, validation_split=0.2, verbose=0)
+plot_history(history_dropout, "Dropout")
+
+# ==========================================================================
+# 4️⃣ Addition of Noise
+noise_factor = 0.1
+X_train_noisy = X_train + noise_factor * np.random.normal(loc=0.0, scale=1.0, size=X_train.shape)
+model_noise = build_model()
+history_noise = model_noise.fit(X_train_noisy, y_train, epochs=10, validation_split=0.2, verbose=0)
+plot_history(history_noise, "Addition of Noise")
+
+# ==========================================================================
+# 5️⃣ Early Stopping
+early_stop = EarlyStopping(patience=10, restore_best_weights=True)
+model_early = build_model()
+history_early = model_early.fit(X_train, y_train, epochs=10, validation_split=0.2,
+                               callbacks=[early_stop], verbose=0)
+plot_history(history_early, "Early Stopping", early_stop_epoch=early_stop.stopped_epoch)
+
