@@ -1,48 +1,40 @@
 import numpy as np
 import pandas as pd
 from sklearn.mixture import GaussianMixture
-import seaborn as sns
-from sklearn.preprocessing import LabelEncoder
+from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 
+# Load Wine dataset
+wine = load_wine()
+df = pd.DataFrame(wine.data, columns=wine.feature_names)
+df['target'] = wine.target
 
-df=sns.load_dataset('iris')
-df.head()
+# Features and target
+x = df.drop(columns=['target'])
+y = df['target']
 
+# Train-test split
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
-x=df.drop(columns=['species'])
-y=df['species']
-
-
-x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
-
-
-le=LabelEncoder()
-y_train=le.fit_transform(y_train)
-y_test=le.transform(y_test)
-
-
-gmm=GaussianMixture(n_components=3,covariance_type='full')
-
-
+# GMM model
+gmm = GaussianMixture(n_components=3, covariance_type='full')
 gmm.fit(x_train)
 
+# Responsibilities (E-step)
+responsibilities = gmm.predict_proba(x_train)
+converged = gmm.converged_
 
-responsibilities=gmm.predict_proba(x_train)
-converged=gmm.converged_
-
-
-print("Expectation Step (responsibilities for each data point):\n", responsibilities[:5])  # Show first 5 points
+# Print EM info
+print("Expectation Step (responsibilities for each data point):\n", responsibilities[:5])
 print("Maximization Step (Updated means of the GMM):\n", gmm.means_)
 print("Maximization Step (Updated covariances of the GMM):\n", gmm.covariances_)
 print("Convergence status: ", converged)
 
-
+# Visualization: Use first two features for 2D scatter plot
 plt.scatter(x_train.iloc[:, 0], x_train.iloc[:, 1], c=gmm.predict(x_train), cmap='viridis')
-plt.title("Gaussian Mixture Model Clustering (EM Algorithm)")
-plt.xlabel("Feature 1")
-plt.ylabel("Feature 2")
+plt.title("Gaussian Mixture Model Clustering (Wine Dataset)")
+plt.xlabel(wine.feature_names[0])
+plt.ylabel(wine.feature_names[1])
 plt.show()
-
-

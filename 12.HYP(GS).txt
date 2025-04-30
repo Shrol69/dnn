@@ -1,49 +1,65 @@
 import numpy as np
 import keras_tuner as kt
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense,Input
+from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_diabetes
 import tensorflow as tf
 
+# Load diabetes dataset
+diabetes = load_diabetes()
+df = diabetes.data
+target = diabetes.target
 
-df = sns.load_dataset('iris')
-df.head()
-x = df.drop(columns=['sepal_length'])
-y = df['sepal_length']
+# Split dataset into features and target
+x = df
+y = target
+
+# Split dataset into training and testing sets
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-le = LabelEncoder()
-x_train['species'] = le.fit_transform(x_train['species'])
-x_test['species']= le.transform(x_test['species'])
 
+# Standardize the features
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
 
+# Function to build the model
 def test_model(hp):
-    model=Sequential()
+    model = Sequential()
     model.add(Input(shape=(x_train.shape[1],)))
-    model.add(Dense(hp.Int('unit1',min_value=32,max_value=128,step=32),activation=hp.Choice('activation1',['relu','tanh','sigmoid'])))
-    model.add(Dense(hp.Int('unit2',min_value=32,max_value=128,step=32),activation=hp.Choice('activation2',['relu','tanh','sigmoid'])))
-    model.add(Dense(1))
-    model.compile(optimizer=SGD(hp.Choice('optimize',[0.00001,0.0001,0.001]),momentum=hp.Choice('momentum',[0.0,0.5,0.9])),loss='mean_squared_error',metrics=['mae'])
+    model.add(Dense(hp.Int('unit1', min_value=32, max_value=128, step=32), activation=hp.Choice('activation1', ['relu', 'tanh', 'sigmoid'])))
+    model.add(Dense(hp.Int('unit2', min_value=32, max_value=128, step=32), activation=hp.Choice('activation2', ['relu', 'tanh', 'sigmoid'])))
+    model.add(Dense(1))  # Output layer for regression
+    model.compile(
+        optimizer=SGD(
+            hp.Choice('optimize', [0.00001, 0.0001, 0.001]),
+            momentum=hp.Choice('momentum', [0.0, 0.5, 0.9])
+        ),
+        loss='mean_squared_error',
+        metrics=['mae']
+    )
     return model
 
-
+# Set up the tuner
 tuner = kt.GridSearch(
     test_model,
-    objective='val_mae',  
+    objective='val_mae',  # Minimize Mean Absolute Error for regression
     max_trials=10,
-    executions_per_trial=1, 
-    directory='test', 
-    project_name='iris_reg2' 
+    executions_per_trial=1,
+    directory='test',
+    project_name='diabetes_regression'
 )
 
-
+# Run the tuner
 tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+
+# Get the best model
 best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
 best_model = tuner.hypermodel.build(best_hp)
 best_model.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+
+# Evaluate the model
 loss, mae = best_model.evaluate(x_test, y_test)
 print(f"Test MAE: {mae}")
-
-

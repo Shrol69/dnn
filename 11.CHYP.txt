@@ -45,5 +45,3 @@ best_model = tuner.hypermodel.build(best_hp)
 best_model.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
 loss, mae = best_model.evaluate(x_test, y_test)
 print(f"Test MAE: {mae}")
-
-
